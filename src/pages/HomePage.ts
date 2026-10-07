@@ -2,8 +2,8 @@ import { Page, expect } from '@playwright/test';
 import { BasePage } from './BasePage';
 
 export class HomePage extends BasePage {
-  readonly getStartedLink = this.page.getByRole('link', { name: 'Get started' });
-  readonly heading = this.page.getByRole('heading', { name: 'Playwright enables reliable end-to-end testing' });
+  readonly getStartedLink = this.page.getByRole('link', { name: /get started/i });
+  readonly heading = this.page.locator('h1').first();
 
   constructor(page: Page) {
     super(page);
