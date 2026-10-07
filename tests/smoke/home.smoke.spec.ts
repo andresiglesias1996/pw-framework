@@ -2,7 +2,7 @@ import { test, expect } from '../../src/fixtures/test.fixtures';
 import { allure } from 'allure-playwright';
 
 test.describe('Home Page - Smoke', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page: _page }) => {
     await allure.suite('Smoke Tests');
     await allure.feature('Homepage');
   });
@@ -15,7 +15,7 @@ test.describe('Home Page - Smoke', () => {
     await homePage.assertHeadingVisible();
   });
 
-  test('@smoke get started link is visible', async ({ homePage, page }) => {
+  test('@smoke get started link is visible', async ({ homePage }) => {
     await allure.story('Navigation');
     await allure.description('Verifies the Get Started link is present on the homepage');
 

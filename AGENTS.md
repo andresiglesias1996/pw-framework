@@ -1,115 +1,54 @@
-# AI Agents — pw-framework
+# AGENTS.md
 
-Guía de uso de agentes de IA con Playwright 1.60+.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Playwright AI Agents
-
-Playwright 1.60 introduce agentes de testing nativos con un flujo planner → generator → healer.
-
-### Arquitectura agéntica
-
-```
-┌─────────────┐    ┌───────────────┐    ┌─────────────┐
-│   Planner   │───▶│   Generator   │───▶│   Healer    │
-│             │    │               │    │             │
-│ Explora app │    │ Genera specs  │    │ Repara tests│
-│ y diseña    │    │ TypeScript    │    │ con traces  │
-│ el plan     │    │ ejecutables   │    │             │
-└─────────────┘    └───────────────┘    └─────────────┘
-```
-
-### MCP Server (Model Context Protocol)
-
-Playwright incluye un MCP server oficial que permite a agentes de IA controlar un browser real:
+## Commands
 
 ```bash
-# Instalar el MCP server de Playwright
-npx @playwright/mcp@latest
+npm install                    # Install dependencies
+npx playwright install         # Install browsers
 
-# Configurar en tu AI coding agent (cursor, claude-code, etc.)
-# En .claude/mcp.json o settings del agente:
-{
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["@playwright/mcp@latest"]
-    }
-  }
-}
+npm test                       # Run all tests
+npm run test:smoke             # Run @smoke tagged tests
+npm run test:regression        # Run @regression tagged tests
+npm run test:accessibility     # Run @accessibility tagged tests
+
+# Run a single test file
+npx playwright test tests/smoke/home.smoke.spec.ts
+
+# Run a single test by title
+npx playwright test -g "test title"
+
+# Run with a specific browser
+npx playwright test --project=chromium
+
+# Run headed (non-headless)
+npx playwright test --headed
+
+# Set a custom base URL
+BASE_URL=https://example.com npm test
+
+npm run allure:serve           # Generate and open Allure report in browser
+
+npm run lint                   # Check for lint errors
+npm run lint:fix               # Auto-fix lint errors
 ```
 
-### Test Agents — Planner
+## Architecture
 
-El planner explora tu app y genera un plan de tests:
+Page Object Model with three layers:
 
-```bash
-# Ejecutar el planner sobre una URL
-npx playwright agent plan --url https://tu-app.com --output tests/plan.md
-```
+- **`src/pages/BasePage.ts`** — abstract base with `navigate()`, `getTitle()`, `waitForVisible()`. All page objects extend this.
+- **`src/pages/`** — concrete page objects (e.g. `HomePage.ts`) that expose domain-level actions and locators.
+- **`src/fixtures/test.fixtures.ts`** — extends Playwright's `test` with typed page object fixtures. **All tests must import `test` and `expect` from here**, not from `@playwright/test` directly.
+- **`src/helpers/`** — cross-cutting utilities (e.g. `accessibility.helper.ts`).
 
-### Test Agents — Generator
+Tests live under `tests/` organized by type (`smoke/`, `regression/`, `accessibility/`). Each test file tags its tests with the matching `@smoke`, `@regression`, or `@accessibility` annotation so the npm scripts can filter them.
 
-Convierte el plan en specs ejecutables:
+`playwright.config.ts` runs three browser projects (Chromium, Firefox, WebKit) in parallel. `BASE_URL` env var overrides the default `https://playwright.dev`. Traces are captured on first retry; screenshots and video are retained on failure.
 
-```bash
-# Generar specs desde el plan
-npx playwright agent generate --plan tests/plan.md --output tests/generated/
-```
+CI runs on GitHub Actions (`.github/workflows/ci.yml`) and publishes the Allure report to GitHub Pages.
 
-### Test Agents — Healer
+## Conventional Commits
 
-Repara tests rotos analizando las trazas:
-
-```bash
-# Reparar tests fallidos
-npx playwright agent heal --trace test-results/trace.zip --spec tests/mi-test.spec.ts
-```
-
-### ARIA Snapshots
-
-En lugar de selectores CSS frágiles, usá ARIA snapshots para assertions accesibles y estables:
-
-```typescript
-test('aria snapshot del header', async ({ page }) => {
-  await page.goto('/');
-  await expect(page.locator('header')).toMatchAriaSnapshot(`
-    - navigation:
-      - link "Home"
-      - link "Docs"
-      - link "API"
-  `);
-});
-```
-
-### Self-healing selectors
-
-Los agentes leen las trazas de Playwright para reparar selectores automáticamente cuando la UI cambia.
-
-```bash
-# Activar modo trace completo para que el healer tenga más contexto
-BASE_URL=https://tu-app.com npx playwright test --trace on
-```
-
-### Debugging con IA desde terminal
-
-```bash
-# Correr tests en modo debug con step-through
-npx playwright test --debug
-
-# El agente puede leer el output y sugerir fixes
-npx playwright test --reporter=json | tu-agente-ia analizar
-```
-
-## Flujo recomendado con AI agents
-
-1. **Nuevo feature**: correr el Planner sobre la nueva pantalla
-2. **Review del plan**: revisar y ajustar el plan generado
-3. **Generar specs**: correr el Generator
-4. **CI falla**: correr el Healer con la traza del fallo
-5. **Nuevos selectores**: usar ARIA snapshots en lugar de CSS
-
-## Recursos
-
-- [Playwright Test Agents docs](https://playwright.dev/docs/test-agents)
-- [Playwright MCP](https://github.com/microsoft/playwright-mcp)
-- [ARIA Snapshots](https://playwright.dev/docs/aria-snapshots)
+Use `feat:`, `fix:`, `test:`, `ci:`, `docs:`, or `chore:` prefixes.
