@@ -23,7 +23,7 @@ jobs:
         run: npm install
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps
 
       - name: Install Allure CLI
         run: npm install -g allure-commandline
